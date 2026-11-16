@@ -3,8 +3,12 @@
   const cw1 = document.getElementById("cw1");
   const cw2 = document.getElementById("cw2");
   const cw3 = document.getElementById("cw3");
+  const cw4 = document.getElementById("cw4");
+  const countryInput = document.getElementById("countryInput");
   const answer = document.getElementById("answer");
   const pops = document.getElementById("pop");
+  const lista = document.getElementById("lista");
+  let getPhrase = secretPhrase();
 
   example.addEventListener("click", function () {
     fetch("https://jsonplaceholder.typicode.com/posts")
@@ -104,6 +108,94 @@
         });
 
         answer.innerHTML = html;
+      });
+  });
+
+  cw4.addEventListener("click", function () {
+    const query = countryInput.value.trim();
+    if (!query) {
+      answer.innerHTML = "<p style='color: red;'>Wprowadź nazwę państwa!</p>";
+      return;
+    }
+    fetch(
+      `https://api.restcountries.com/countries/v5?q=${encodeURIComponent(query)}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${getPhrase}`,
+        },
+      },
+    )
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(
+            `Błąd HTTP: ${response.status} (${response.statusText})`,
+          );
+        }
+        return response.json();
+      })
+      .then((data) => {
+        const countries = data.data?.objects || [];
+
+        if (countries.length === 0) {
+          answer.innerHTML = "<p>Brak wyników dla podanego zapytania.</p>";
+          return;
+        }
+
+        let html = `
+          <table border="1" style="width: 100%; text-align: left; border-collapse: collapse; margin-top: 10px;">
+            <thead>
+              <tr style="background-color: #f2f2f2;">
+                <th>Name</th>
+                <th>Capital</th>
+                <th>Population</th>
+                <th>Region</th>
+                <th>Subregion</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        countries.forEach((country) => {
+          const name =
+            country.names && country.names.common
+              ? country.names.common
+              : "Brak danych";
+          const capital =
+            country.capitals && country.capitals[0] && country.capitals[0].name
+              ? country.capitals[0].name
+              : "Brak stolicy";
+          const population =
+            country.population !== undefined
+              ? country.population.toLocaleString()
+              : "Brak danych";
+          const region = country.region || "Brak danych";
+          const subregion = country.subregion || "Brak danych";
+
+          html += `
+            <tr>
+              <td>${name}</td>
+              <td>${capital}</td>
+              <td>${population}</td>
+              <td>${region}</td>
+              <td>${subregion}</td>
+            </tr>
+          `;
+        });
+
+        html += `
+            </tbody>
+          </table>
+        `;
+
+        answer.innerHTML = html;
+      })
+      .catch((error) => {
+        console.error("Wystąpił błąd:", error);
+        answer.innerHTML = `<p style="color: red;">Wystąpił błąd podczas pobierania danych: ${error.message}</p>`;
+      })
+      .finally(() => {
+        pops.style.display = "none";
       });
   });
 })();
